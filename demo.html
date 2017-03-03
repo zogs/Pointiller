@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Pointiller Test</title>
+</head>
+<body id="body">
+    <style>
+        body { background: #EEE; }
+
+        .intro { text-align: center; margin-bottom: 50px; }
+
+        .images { float:left; width: 200px; height: 700px; padding:10px; margin:10px; border:1px solid grey; overflow-y: scroll;}
+        .images img { width:150px; }
+
+        .canvas > div { float:left; width: 30%; }
+        .canvas > div h2 { text-align: center; }
+        .canvas > div canvas { width: 100%; height: 100%; border:1px solid #DDD;}
+
+        #form { text-align: right; margin-right: 10px;}
+        #form label { display: block; width: 100%;}
+        #form #submit { margin: 10px 20px; }
+
+        .debug { border:1px solid red; background:#FFF }
+
+        #counter { position: absolute; width: 100px; padding: 3px 5px; background: #DDD; }
+    </style>
+
+
+
+    <div class="intro">
+        <h1>Demo Pointiller</h1>
+        <span>
+            Here you can test Pointiller.js :)
+            Use the script as you want. Try the form bellow to test the rendering of pointillism. Test with your own image.
+        </span>
+    </div>
+
+    <div class="canvas">
+        <div id="form">
+        
+            <div class="images">
+                <img id="image1" crossOrigin="anonymous" src="http://i.imgur.com/TQAOVkU.jpg">
+                <img id="image2" crossOrigin="anonymous" src="http://i.imgur.com/flLP8FD.png">
+                <img id="image3" crossOrigin="anonymous" src="http://i.imgur.com/LHycKzT.jpg">
+                <img id="image3" crossOrigin="anonymous" src="http://i.imgur.com/FApqk3D.jpg">
+                <img id="image3" crossOrigin="anonymous" src="http://i.imgur.com/heXk4.jpg">
+            </div>
+            <form action="#">
+                <p>
+                    <label><strong>Ignore a color before transform:</strong></label>
+                    <label for="">Color: <input type="text" name="color" value="#FFFFFF"></label>
+                    <label>Tolerance : <input type="number" name="color-tolerance" value="1"></label>
+                    <button type="submit" class="excludeColor">Exclude color</button>
+                </p>
+                <br>
+                <p>
+                    <label><strong>Transform to fixed size points:</strong></label>
+                    <label>Size: <input type="number" name="size" value="5"></label>
+                    <button type="submit" class="performFixed">Convert to points</button>
+                </p>
+                <br>
+                <p>
+                    <label><strong>Try adaptive size points:</strong></label>
+                    <label>minSize: <input type="number" name="minSize" value="1"></label>
+                    <label>maxSize: <input type="number" name="maxSize" value="50"></label>
+                    <label>step: <input type="number" name="step" value='1'></label>
+                    <label>tolerance: <input type="number" name="tolerance" value="1"></label>
+                    <button type="submit" class="performAdaptive">Convert to adaptive points</button>
+                </p>
+                <p>
+                    <label><strong>Add image for testing:</strong></label>
+                    <label>Url: <input type="url" name="url" value=""></label>
+                    <small>* may not work because of crossOrigin</small>
+                    <button type="submit" class="addImage">Add image</button>
+                </p>
+            </form>
+        </div>
+        <div id="debug">
+            <h2>Debug canvas</h2>
+        </div>
+
+        <div id="res">
+            <h2>Destination canvas</h2>
+            <div id="counter"></div>
+            <canvas id="output" height='500' width='500'></canvas>            
+        </div>
+    </div>
+
+    <script type="text/javascript" src="canvas.pointiller.js"></script>
+    <script type="text/javascript">
+
+    const outcanvas = document.querySelector('#output');
+    const outcontext = outcanvas.getContext('2d');
+    const pointiller = new Pointiller(500,500);
+    const debugcanvas = pointiller.getCanvas();
+    let currentImage = null;
+    document.getElementById('debug').append(debugcanvas);
+
+    // load first image
+    let img = document.querySelector('.images img:first-child');
+    changeImage.apply(img);
+
+    // add image listener
+    let imgs = document.querySelectorAll('.images img');    
+    [...imgs].map((img) => { img.addEventListener('click', changeImage)});
+
+    // add form listener
+    document.querySelector('.performFixed').addEventListener('click', performFixed);
+    document.querySelector('.performAdaptive').addEventListener('click', performAdaptive);
+    document.querySelector('.excludeColor').addEventListener('click', excludeColor);
+    document.querySelector('.addImage').addEventListener('click', addImage);
+
+
+    function changeImage() {
+        pointiller.clear();
+        currentImage = this;
+        pointiller.addImage(currentImage,500,500);
+        performFixed();
+    }
+
+    function performFixed(e) {
+
+        let size = document.querySelector('input[name=size]').value;
+       
+        var points = pointiller.toPoints(parseInt(size));
+        
+        showPoints(points);
+
+        if(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        } 
+        
+    }
+
+    function performAdaptive(e) {
+
+        let minSize = document.querySelector('input[name=minSize]').value;
+        let maxSize = document.querySelector('input[name=maxSize]').value;
+        let step = document.querySelector('input[name=step]').value;
+        let tolerance = document.querySelector('input[name=tolerance]').value;
+
+        var points = pointiller.toAdaptivePoints(parseInt(minSize),parseInt(maxSize),parseInt(step),parseInt(tolerance));
+        
+        showPoints(points);
+
+        if(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        } 
+        
+    }
+
+    function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+
+    function showPoints(points) {
+
+        const ctx = outcontext;
+        ctx.clearRect(0,0,outcanvas.width,outcanvas.height);
+
+        document.querySelector('#counter').innerHTML = points.length+' points';
+
+        for(var i=0,len=points.length; i<len; i++) {
+
+            let point = points[i];
+            let radius = (point.w/2 < 1)? 1 : point.w/2;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'rgba('+point.r+','+point.g+','+point.b+','+point.a+')';
+            ctx.fill();
+        }
+
+    }
+
+
+    function addImage(e) {
+
+        let url = document.querySelector('input[name=url]').value;
+        let image = new Image();
+        image.onload = function(){
+            document.querySelector('.images').prepend(this);
+            this.addEventListener('click', changeImage);
+            performFixed();
+        }
+        image.crossOrigin = 'anonymous';
+        image.src = url;
+
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function excludeColor(e) {
+
+        let color = document.querySelector('input[name=color]').value;
+        let tolerance = document.querySelector('input[name=color-tolerance]').value;
+
+        color = hexToRgb(color);
+        color = [color.r,color.g,color.b];
+        pointiller.excludeColor(color,tolerance)
+        
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+
+    </script>
+
+</body>
+</html>

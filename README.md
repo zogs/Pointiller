@@ -10,6 +10,10 @@ It draws an image into a hidden canvas and perform an operation on the canvas pi
 
 Look at demo.html to see it in action !
 
+![alt tag](https://github.com/zogs/Pointiller/blob/master/images/screenshot/shot1.jpg)
+![alt tag](https://github.com/zogs/Pointiller/blob/master/images/screenshot/shot2.jpg)
+![alt tag](https://github.com/zogs/Pointiller/blob/master/images/screenshot/shot3.jpg)
+
 ## How to use
 
 ```
